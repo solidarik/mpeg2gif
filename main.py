@@ -1,11 +1,14 @@
 import os
 from moviepy import VideoFileClip
+from moviepy.video.fx import MultiplySpeed
 from dotenv import load_dotenv
 load_dotenv()
 
 # --- SETTINGS ---
 source_folder = os.getenv("SOURCE_FOLDER")
 output_folder = os.getenv("OUTPUT_FOLDER")
+freq = float(os.getenv("FREQ", 1.0))
+width = int(os.getenv("WIDTH", 480))
 duration = 10  # Length in seconds
 
 # Create output folder if it doesn't exist
@@ -24,9 +27,16 @@ for filename in os.listdir(source_folder):
 
         try:
             # Load video and subclip to 10 seconds
-            with VideoFileClip(video_path).subclip(0, duration) as clip:
-                # 'opt' helps reduce file size; 'fps' keeps the gif smooth but small
-                clip.write_gif(gif_path, fps=10, program='ffmpeg')
+            with VideoFileClip(video_path).subclipped(0, duration) as clip:
+                if freq != 1.0:
+                    clip = clip.with_effects([MultiplySpeed(freq)])
+                
+                # Shrink video resolution to reduce GIF size
+                if width > 0:
+                    clip = clip.resized(width=width)
+                    
+                # 'fps' keeps the gif smooth but small
+                clip.write_gif(gif_path, fps=10)
         except Exception as e:
             print(f"Could not convert {filename}: {e}")
 
